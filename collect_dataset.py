@@ -19,7 +19,7 @@
    - Vary: distance, angle, lighting, weather
    - Include partial views (not just perfect centered shots)
    - Capture morning, noon, sunset light conditions
-======================================================================
+================================================================
 """
 
 import cv2
