@@ -6,7 +6,7 @@ from datetime import datetime
 import threading
 import collections
 
-# ======================================================================
+# ================================================================
 #  PROFESSIONAL BOAT DETECTION + CLASSIFICATION SYSTEM
 #  Platform  : NVIDIA Jetson (Orin/Xavier) + IMX477 CSI camera
 #  Detection : YOLOv8m — high precision, multi-scale
@@ -24,7 +24,7 @@ import collections
 #    C = classifier  A = augment (more accurate, slower)
 #    + / - = confidence threshold
 #    ] / [ = inference size (1280 = best for far boats)
-# ======================================================================
+# =================================================================
 
 OUTPUT_DIR = Path.home() / "Desktop" / "vision_output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
