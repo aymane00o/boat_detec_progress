@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-======================================================================
+=============================================================
  BOAT CLASSIFIER — LOCAL TRAINING (no internet needed)
  Uses the dataset collected with collect_dataset.py
  Output: best.pt → plug directly into boat_detection_jetson.py
-======================================================================
+================================================================
 """
 
 import sys
