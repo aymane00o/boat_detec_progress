@@ -6,258 +6,340 @@ the boat_detec_beta_jetson is a good version of the code but not enough.
 
 the boat_detec_1_jetson is the first version not good enought.
 
-#!/bin/bash
-# ================================================================
-#  GIT SETUP SCRIPT — Boat Detection Project
-#  Platform : NVIDIA Jetson Orin Nano Super
-#  Run once : bash git_setup.sh
-# ================================================================
-
-set -e  # stop on any error
-
-# ── Colors ────────────────────────────────────────────────────────
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-echo -e "${BLUE}"
-echo "=================================================="
-echo "   Boat Detection — Git Repository Setup"
-echo "=================================================="
-echo -e "${NC}"
-
-# ── 1. Git config ─────────────────────────────────────────────────
-echo -e "${YELLOW}[1/6] Configuring Git identity...${NC}"
-read -p "  Enter your Git username : " GIT_USER
-read -p "  Enter your Git email    : " GIT_EMAIL
-
-git config --global user.name  "$GIT_USER"
-git config --global user.email "$GIT_EMAIL"
-git config --global core.editor nano
-git config --global init.defaultBranch main
-echo -e "${GREEN}  ✓ Git identity set${NC}"
-
-# ── 2. Init repo ──────────────────────────────────────────────────
-echo -e "${YELLOW}[2/6] Initializing repository...${NC}"
-
-PROJECT_DIR="$HOME/boat_detection"
-mkdir -p "$PROJECT_DIR"
-cd "$PROJECT_DIR"
-
-# Create project folder structure
-mkdir -p models outputs logs configs tests
-
-echo -e "${GREEN}  ✓ Project created at: $PROJECT_DIR${NC}"
-
-# ── 3. Create .gitignore ──────────────────────────────────────────
-echo -e "${YELLOW}[3/6] Creating .gitignore...${NC}"
-
-cat > .gitignore << 'EOF'
-# ── Models & Weights ──────────────────────────────────────────────
-*.pt
-*.pth
-*.engine
-*.onnx
-*.trt
-models/
-
-# ── Output files ──────────────────────────────────────────────────
-outputs/
-*.jpg
-*.jpeg
-*.png
-*.mp4
-*.avi
-*.raw
-*.h264
-
-# ── Logs ──────────────────────────────────────────────────────────
-logs/
-*.log
-runs/
-
-# ── Python ────────────────────────────────────────────────────────
-__pycache__/
-*.py[cod]
-*.so
-*.egg
-*.egg-info/
-dist/
-build/
-.eggs/
-.venv/
-venv/
-env/
-
-# ── Jupyter ───────────────────────────────────────────────────────
-.ipynb_checkpoints/
-*.ipynb
-
-# ── System ────────────────────────────────────────────────────────
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-
-# ── NVIDIA / CUDA ─────────────────────────────────────────────────
-*.cubin
-*.fatbin
-*.ptx
-
-# ── IDE ───────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.code-workspace
-
-# ── Secrets ───────────────────────────────────────────────────────
-.env
-*.key
-secrets.yaml
-EOF
-
-echo -e "${GREEN}  ✓ .gitignore created${NC}"
-
-# ── 4. Copy main script ───────────────────────────────────────────
-echo -e "${YELLOW}[4/6] Setting up project files...${NC}"
-
-# Create main detection script placeholder if not present
-if [ ! -f "boat_detection.py" ]; then
-cat > boat_detection.py << 'PYEOF'
-# Place your boat_detection.py content here
-# or copy it with: cp /path/to/boat_detection.py .
-PYEOF
-fi
-
-# Create requirements.txt
-cat > requirements.txt << 'EOF'
-# ── Core ──────────────────────────────────────────────────────────
-# PyTorch: install separately via NVIDIA wheel (see README)
-ultralytics==8.3.0
-numpy==1.24.4
-opencv-python==4.8.1.78
-Pillow==10.3.0
-
-# ── Utilities ─────────────────────────────────────────────────────
-PyYAML==6.0.1
-requests==2.31.0
-tqdm==4.66.1
-psutil==5.9.8
-py-cpuinfo==9.0.0
-scipy==1.11.4
-matplotlib==3.7.5
-seaborn==0.13.2
-pandas==2.0.3
-EOF
-
-# Create README
-cat > README.md << 'EOF'
 # 🚤 Boat Detection System
-**Platform:** NVIDIA Jetson Orin Nano Super  
-**Camera:** Arducam IMX219 (CSI)  
-**Model:** YOLOv8m + YOLOv8s-cls  
 
-## Setup
 
-### 1. Install PyTorch (Jetson)
+**Real-time boat detection and classification using YOLOv8 on Jetson Orin Nano Super**  
+*Arducam IMX219 CSI Camera · TensorRT Accelerated · Tracker-Ready Architecture*
+
+[Features](#-features) · [Hardware](#-hardware) · [Installation](#-installation) · [Usage](#-usage) · [Controls](#-controls) · [Architecture](#-architecture)
+
+</div>
+
+---
+
+## 📸 Demo
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Boats: 3                    GPU  CLS        FPS  28.4  │
+│                                               Det  34ms  │
+│  ┌─────────────────┐                         Cls   8ms  │
+│  │ Speedboat  87%  │                                     │
+│  └─────────────────┘                                     │
+│                    ┌──────────────┐                      │
+│                    │  Ferry  72%  │                      │
+│                    └──────────────┘                      │
+│                                  ┌───────────────────┐  │
+│                                  │  Cargo Barge  65% │  │
+│                                  └───────────────────┘  │
+│  Conf:0.25  Size:1280  Q=Quit S=Save C=Cls A=Aug        │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ✨ Features
+
+- 🎯 **Real-time detection** — YOLOv8m at 25–30 FPS (GPU accelerated)
+- 🚢 **14+ boat types** — Speedboat, Ferry, Cargo, Sailboat, Military Vessel, and more
+- ⚡ **TensorRT export** — automatic one-time optimization on first run
+- 🧵 **Threaded camera** — zero-stall frame buffer, always fresh frames
+- 📊 **Live HUD** — FPS, inference time, confidence bar, detection count
+- 🔌 **Tracker-ready** — `Detection` objects have `.track_id` and `.age` slots
+- 📸 **Screenshot** — save annotated frames with one key press
+- 🎛️ **Runtime controls** — adjust confidence and inference size on the fly
+
+---
+
+## 🔧 Hardware
+
+| Component | Details |
+|-----------|---------|
+| **Board** | NVIDIA Jetson Orin Nano Super |
+| **Camera** | Arducam IMX219 8MP (CSI) |
+| **JetPack** | 6.x (L4T R36.4.7) |
+| **Kernel** | 5.15.148-tegra OOT |
+| **RAM** | 8GB LPDDR5 |
+| **Storage** | NVMe SSD recommended |
+
+---
+
+## 📦 Installation
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/boat-detection.git
+cd boat-detection
+```
+
+### 2. Install system dependencies
+
+```bash
+sudo apt update && sudo apt install -y \
+  python3-pip python3-dev python3-opencv \
+  gstreamer1.0-tools gstreamer1.0-plugins-base \
+  gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+  gstreamer1.0-plugins-ugly gstreamer1.0-libav \
+  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+  v4l-utils
+```
+
+### 3. Install PyTorch for Jetson ⚠️
+
+> Do **not** use `pip install torch` — it won't have CUDA support on Jetson.
+
 ```bash
 wget https://developer.download.nvidia.com/compute/redist/jp/v61/pytorch/torch-2.3.0a0+ebedce2.nv24.2-cp310-cp310-linux_aarch64.whl
 pip3 install torch-2.3.0a0+ebedce2.nv24.2-cp310-cp310-linux_aarch64.whl
+pip3 install torchvision==0.18.0
 ```
 
-### 2. Install dependencies
+### 4. Install Python dependencies
+
 ```bash
 pip3 install -r requirements.txt
 ```
 
-### 3. Reset camera daemon
+### 5. Verify installation
+
+```bash
+python3 verify.py
+```
+
+Expected output:
+```
+PyTorch     : 2.3.0
+CUDA        : True | 12.2
+OpenCV      : 4.8.1
+Ultralytics : 8.3.0
+GStreamer   : YES
+GPU         : Orin (nvgpu)
+✅ All checks passed — ready to run!
+```
+
+---
+
+## 🚀 Usage
+
+### Reset camera daemon (run before each session)
+
 ```bash
 sudo systemctl restart nvargus-daemon
 ```
 
-### 4. Run
+### Run the detection system
+
 ```bash
 python3 boat_detection.py
 ```
 
-## Controls
+### First run note
+On first launch, YOLOv8 models are downloaded automatically (~50MB each).  
+TensorRT engine export runs once (~2 min) and is cached for future runs.
+
+### Use USB webcam instead of CSI
+
+```python
+# In boat_detection.py, change the last line:
+run(use_gstreamer=False)
+```
+
+---
+
+## 🎛️ Controls
+
 | Key | Action |
 |-----|--------|
-| Q | Quit |
-| S | Screenshot |
-| C | Toggle classifier |
-| A | Toggle augmentation |
-| + / - | Confidence threshold |
-| ] / [ | Inference size |
+| `Q` | Quit |
+| `S` | Save screenshot to `~/Desktop/vision_output/` |
+| `C` | Toggle boat type classifier ON/OFF |
+| `A` | Toggle augmentation (better recall, slower) |
+| `+` / `=` | Increase confidence threshold (fewer detections) |
+| `-` | Decrease confidence threshold (more detections) |
+| `]` | Increase inference size (catches far/small boats) |
+| `[` | Decrease inference size (faster) |
 
-## Output
-Screenshots saved to `~/Desktop/vision_output/`
-EOF
+---
 
-# Create config file
-cat > configs/config.yaml << 'EOF'
+## 🏗️ Architecture
+
+```
+CSI Camera (IMX219)
+      │
+      ▼
+ CameraThread  ──── daemon thread, always holds latest frame
+      │
+      ▼
+  FrameBuffer  ──── thread-safe lock, zero stall
+      │
+      ▼
+   Detector    ──── YOLOv8m → filters COCO IDs {8=boat, 9=ship}
+      │
+      ▼
+  Classifier   ──── YOLOv8s-cls → maps ImageNet → boat type
+      │              (runs every 4 frames to save GPU)
+      ▼
+  [Tracker]    ──── plug-in slot: tracker.update(detections)
+      │              assigns Detection.track_id + Detection.age
+      ▼
+   Renderer    ──── bounding boxes, labels, HUD overlay
+      │
+      ▼
+  cv2.imshow   ──── display / screenshot
+```
+
+### Detection Object (tracker-ready)
+
+```python
+class Detection:
+    x1, y1, x2, y2  # bounding box
+    det_conf         # detector confidence
+    boat_type        # classified boat type string
+    cls_conf         # classifier confidence
+    track_id         # set by tracker (-1 if no tracker)
+    age              # frames tracked
+    
+    # Properties
+    .bbox    → (x1, y1, x2, y2)
+    .center  → (cx, cy)
+    .color   → BGR color for this boat type
+```
+
+---
+
+## 🚢 Supported Boat Types
+
+| Type | Label |
+|------|-------|
+| Speedboat | `Speedboat` |
+| Sailboat | `Sailboat` |
+| Catamaran | `Catamaran` |
+| Pontoon | `Pontoon Boat` |
+| Kayak / Canoe | `Kayak / Canoe` |
+| Dinghy | `Dinghy` |
+| Inflatable RIB | `Inflatable RIB` |
+| Ferry | `Ferry` |
+| Tugboat | `Tugboat` |
+| Container Ship | `Container Ship` |
+| Cargo Barge | `Cargo Barge` |
+| Cruise Ship | `Cruise Ship` |
+| Houseboat | `Houseboat` |
+| Military Vessel | `Military Vessel` |
+
+---
+
+## ⚙️ Configuration
+
+Edit `configs/config.yaml` to tune the system:
+
+```yaml
 camera:
   width: 1920
   height: 1080
   fps: 60
-  flip: 0
-  display_width: 1280
-  display_height: 720
+  flip: 0              # 0=none 2=180° flip
 
 detection:
-  model: yolov8m.pt
-  conf_thresh: 0.25
+  model: yolov8m.pt    # yolov8l.pt for more accuracy
+  conf_thresh: 0.25    # lower = detect far boats
   iou_thresh: 0.40
-  infer_size: 1280
-  min_box_area: 100
+  infer_size: 1280     # 1280 = best for small/far boats
+  min_box_area: 100    # px² noise filter
 
 classifier:
   model: yolov8s-cls.pt
-  classify_every: 4
+  classify_every: 4    # re-classify every N frames
   enabled: true
-EOF
+```
 
-echo -e "${GREEN}  ✓ Project files created${NC}"
+---
 
-# ── 5. Init git and first commit ──────────────────────────────────
-echo -e "${YELLOW}[5/6] Creating first commit...${NC}"
+## 🐛 Troubleshooting
 
-git init
-git add .
-git commit -m "🚀 Initial commit — Boat detection system (Jetson Orin Nano)"
+### Camera not found
+```bash
+sudo systemctl restart nvargus-daemon
+ls /dev/video*
+```
 
-echo -e "${GREEN}  ✓ Repository initialized with first commit${NC}"
+### `Failed to create CaptureSession`
+```bash
+sudo systemctl restart nvargus-daemon && sleep 2
+python3 boat_detection.py
+```
 
-# ── 6. Connect to remote (optional) ──────────────────────────────
-echo -e "${YELLOW}[6/6] Remote repository (GitHub/GitLab)...${NC}"
-read -p "  Do you have a remote repo URL? (leave blank to skip): " REMOTE_URL
+### No GPU detected
+```bash
+python3 -c "import torch; print(torch.cuda.is_available())"
+# If False → reinstall PyTorch from NVIDIA wheel (Step 3)
+```
 
-if [ -n "$REMOTE_URL" ]; then
-    git remote add origin "$REMOTE_URL"
-    git branch -M main
-    git push -u origin main
-    echo -e "${GREEN}  ✓ Pushed to remote: $REMOTE_URL${NC}"
-else
-    echo -e "  Skipped — add remote later with:"
-    echo -e "  ${BLUE}git remote add origin <your-repo-url>${NC}"
-    echo -e "  ${BLUE}git push -u origin main${NC}"
-fi
+### Low FPS
+- Lower inference size: press `[` during runtime
+- Disable augmentation: press `A`
+- Disable classifier: press `C`
+- Switch to `yolov8s.pt` for faster detection
 
-# ── Done ──────────────────────────────────────────────────────────
-echo ""
-echo -e "${GREEN}=================================================="
-echo "   ✓ Setup Complete!"
-echo "=================================================="
-echo -e "${NC}"
-echo -e "  Project location : ${BLUE}$PROJECT_DIR${NC}"
-echo ""
-echo -e "  Useful commands:"
-echo -e "  ${BLUE}cd $PROJECT_DIR${NC}"
-echo -e "  ${BLUE}git status${NC}              — check changes"
-echo -e "  ${BLUE}git add .${NC}               — stage all changes"
-echo -e "  ${BLUE}git commit -m 'msg'${NC}     — commit"
-echo -e "  ${BLUE}git push${NC}                — push to remote"
-echo -e "  ${BLUE}git log --oneline${NC}       — view history"
-echo ""
+### TensorRT export failed
+```bash
+# Delete cached engines and retry
+rm ~/Desktop/vision_output/*.engine
+python3 boat_detection.py
+```
+
+---
+
+## 🗂️ Project Structure
+
+```
+boat-detection/
+├── boat_detection.py     # main detection script
+├── verify.py             # installation checker
+├── requirements.txt      # Python dependencies
+├── git_setup.sh          # repo setup script
+├── README.md
+├── configs/
+│   └── config.yaml       # tunable parameters
+├── models/               # cached .pt / .engine files (gitignored)
+├── outputs/              # screenshots (gitignored)
+└── logs/                 # run logs (gitignored)
+```
+
+---
+
+## 📋 Dependencies
+
+| Package | Version |
+|---------|---------|
+| PyTorch | 2.3.0 (NVIDIA aarch64) |
+| Ultralytics | 8.3.0 |
+| OpenCV | 4.8.1 |
+| NumPy | 1.24.4 |
+| Python | 3.10.x |
+| CUDA | 12.2 |
+| JetPack | 6.x |
+
+---
+
+## 🔮 Roadmap
+
+- [ ] Add DeepSORT / ByteTrack tracker
+- [ ] Custom trained model on maritime dataset
+- [ ] RTSP stream output
+- [ ] REST API for detection results
+- [ ] Multi-camera support (CAM0 + CAM1)
+- [ ] Alarm trigger on vessel class detection
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+Built for real-time maritime surveillance on NVIDIA Jetson Orin Nano Super
+</div>
