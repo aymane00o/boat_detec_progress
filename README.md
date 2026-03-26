@@ -334,9 +334,6 @@ boat-detection/
 
 ---
 
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
