@@ -70,7 +70,7 @@ the boat_detec_1_jetson is the first version not good enought.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/boat-detection.git
+git clone https://github.com/aymane00o/boat-detection.git
 cd boat-detection
 ```
 
@@ -95,19 +95,6 @@ wget https://developer.download.nvidia.com/compute/redist/jp/v61/pytorch/torch-2
 pip3 install torch-2.3.0a0+ebedce2.nv24.2-cp310-cp310-linux_aarch64.whl
 pip3 install torchvision==0.18.0
 ```
-
-### 4. Install Python dependencies
-
-```bash
-pip3 install -r requirements.txt
-```
-
-### 5. Verify installation
-
-```bash
-python3 verify.py
-```
-
 Expected output:
 ```
 PyTorch     : 2.3.0
